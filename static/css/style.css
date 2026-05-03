@@ -3,6 +3,7 @@
    ═══════════════════════════════════════════════ */
 
 /* ── FONTS & RESET ─────────────────────────── */
+/* No external CDN — fonts served from system stack for full offline support */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
@@ -40,12 +41,18 @@
 
   --shadow-card: 0 4px 32px rgba(0,0,0,0.5);
   --shadow-glow: 0 0 40px rgba(124,110,245,0.2);
+
+  /* System font stacks — no CDN required */
+  --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+               'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'Cascadia Code', 'Fira Code',
+               'Consolas', 'Courier New', monospace;
 }
 
 html { scroll-behavior: smooth; }
 
 body {
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--font-sans);
   background: var(--bg-base);
   color: var(--text-primary);
   min-height: 100vh;
@@ -214,7 +221,7 @@ body {
 .stat-num {
   font-size: 1.1rem;
   font-weight: 700;
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--font-mono);
   color: var(--text-primary);
 }
 .stat-label {
@@ -222,6 +229,83 @@ body {
   color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.06em;
+}
+
+/* ── FILE UPLOAD ─────────────────────────────── */
+.file-input {
+  display: none;
+}
+
+.upload-zone {
+  margin: 0 16px 0;
+  border: 1.5px dashed rgba(124,110,245,0.25);
+  border-radius: var(--radius-md);
+  background: rgba(124,110,245,0.03);
+  transition: border-color 0.2s, background 0.2s;
+  position: relative;
+  overflow: hidden;
+}
+.upload-zone:hover,
+.upload-zone.drag-over {
+  border-color: var(--primary);
+  background: rgba(124,110,245,0.08);
+}
+.upload-zone.drag-over { box-shadow: 0 0 0 3px var(--primary-glow); }
+
+.upload-label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 20px 16px;
+  cursor: pointer;
+  color: var(--text-muted);
+  transition: color 0.2s;
+  user-select: none;
+}
+.upload-label svg { color: var(--primary); opacity: 0.7; }
+.upload-zone:hover .upload-label { color: var(--text-secondary); }
+.upload-zone:hover .upload-label svg { opacity: 1; }
+
+.upload-title {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+.upload-sub {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+.upload-sub u { color: var(--primary); text-decoration-color: var(--primary); }
+
+.upload-status {
+  font-size: 0.76rem;
+  text-align: center;
+  padding: 0 16px 10px;
+  min-height: 20px;
+  transition: all 0.2s;
+}
+.upload-status.success { color: var(--accent-green); }
+.upload-status.error   { color: var(--direct-color); }
+.upload-status.loading { color: var(--primary); }
+
+.upload-or {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 20px 0;
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+}
+.upload-or::before,
+.upload-or::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
 }
 
 /* ── INPUTS ──────────────────────────────────── */
@@ -287,13 +371,13 @@ body {
   border: none;
   outline: none;
   padding: 20px;
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--font-mono);
   font-size: 0.82rem;
   color: var(--text-primary);
   line-height: 1.8;
   placeholder-color: var(--text-muted);
 }
-.doc-textarea::placeholder { color: var(--text-muted); font-family: 'Inter', sans-serif; }
+.doc-textarea::placeholder { color: var(--text-muted); font-family: var(--font-sans); }
 
 .doc-footer {
   display: flex;
@@ -302,7 +386,7 @@ body {
   padding: 10px 20px;
   border-top: 1px solid var(--border);
 }
-.char-count { font-size: 0.72rem; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; }
+.char-count { font-size: 0.72rem; color: var(--text-muted); font-family: var(--font-mono); }
 
 /* VS divider */
 .vs-divider {
@@ -578,7 +662,7 @@ body {
 .match-type-badge.Direct { background: var(--direct-bg); color: var(--direct-color); border: 1px solid rgba(239,68,68,0.25); }
 .match-type-badge.Paraphrased { background: var(--paraphrase-bg); color: var(--paraphrase-color); border: 1px solid rgba(245,158,11,0.25); }
 .match-score {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--font-mono);
   font-size: 0.82rem;
   font-weight: 600;
   color: var(--text-secondary);

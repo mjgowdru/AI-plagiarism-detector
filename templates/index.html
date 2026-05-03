@@ -5,9 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>PlagiaGuard — SBERT Plagiarism Detection System</title>
   <meta name="description" content="Advanced AI-powered plagiarism detection using SBERT semantic embeddings. Compare documents for direct copying, paraphrasing, and originality." />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <!-- Fonts loaded via static/css/style.css @font-face (offline, no CDN) -->
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
 </head>
 <body>
@@ -61,6 +59,20 @@
             <div class="doc-meta">Original / Reference Text</div>
             <button class="btn-sample" data-target="docA" title="Load sample text">Try Sample</button>
           </div>
+          <!-- Upload zone -->
+          <div class="upload-zone" id="uploadZoneA" data-target="docA">
+            <input type="file" id="fileA" class="file-input" accept=".pdf,.docx,.doc" />
+            <label for="fileA" class="upload-label">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+                <path d="M12 16V4M12 4l-4 4M12 4l4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+              <span class="upload-title">Drop PDF or Word file here</span>
+              <span class="upload-sub">or <u>click to browse</u> &nbsp;·&nbsp; .pdf, .docx</span>
+            </label>
+            <div class="upload-status" id="uploadStatusA"></div>
+          </div>
+          <div class="upload-or"><span>or type / paste text below</span></div>
           <textarea
             id="docA"
             class="doc-textarea"
@@ -86,6 +98,20 @@
             <div class="doc-meta">Suspected / Submitted Text</div>
             <button class="btn-sample" data-target="docB" title="Load sample text">Try Sample</button>
           </div>
+          <!-- Upload zone -->
+          <div class="upload-zone" id="uploadZoneB" data-target="docB">
+            <input type="file" id="fileB" class="file-input" accept=".pdf,.docx,.doc" />
+            <label for="fileB" class="upload-label">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+                <path d="M12 16V4M12 4l-4 4M12 4l4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+              <span class="upload-title">Drop PDF or Word file here</span>
+              <span class="upload-sub">or <u>click to browse</u> &nbsp;·&nbsp; .pdf, .docx</span>
+            </label>
+            <div class="upload-status" id="uploadStatusB"></div>
+          </div>
+          <div class="upload-or"><span>or type / paste text below</span></div>
           <textarea
             id="docB"
             class="doc-textarea"

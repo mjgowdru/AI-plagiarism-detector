@@ -3,38 +3,51 @@ import re
 import json
 import logging
 import warnings
+import io
 import numpy as np
+
+# ── OFFLINE MODE: Disable all HuggingFace / Transformers network calls ────────
+os.environ["TRANSFORMERS_OFFLINE"] = "1"
+os.environ["HF_DATASETS_OFFLINE"] = "1"
+os.environ["HF_HUB_OFFLINE"] = "1"
+
+# ── CPU-ONLY fallback (no GPU required, low-RAM friendly) ─────────────────────
+try:
+    import torch
+    torch.set_num_threads(2)          # cap threads to keep RAM usage low
+    _DEVICE = "cpu"                   # force CPU; change to "cuda" if GPU available
+except ImportError:
+    _DEVICE = "cpu"
 
 warnings.filterwarnings("ignore")
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 from flask import Flask, render_template, request, jsonify
+from werkzeug.utils import secure_filename
 from flask_cors import CORS
+
+# ── LOCAL MODEL PATH ─────────────────────────────────────────────────────────
+# Run  `python download_model.py`  once to create this directory.
+LOCAL_MODEL_PATH = os.path.join(os.path.dirname(__file__), "local_model")
 
 # Lazy-load heavy models
 _model = None
-_nltk_ready = False
 
 def get_model():
+    """Load the SentenceTransformer model from the local cache directory."""
     global _model
     if _model is None:
-        logger.info("Loading SBERT model...")
+        if not os.path.isdir(LOCAL_MODEL_PATH):
+            raise RuntimeError(
+                f"Local model not found at '{LOCAL_MODEL_PATH}'.\n"
+                "Run  python download_model.py  to download and cache the model first."
+            )
+        logger.info("Loading SBERT model from local directory: %s", LOCAL_MODEL_PATH)
         from sentence_transformers import SentenceTransformer
-        _model = SentenceTransformer("all-MiniLM-L6-v2")
-        logger.info("SBERT model loaded.")
+        _model = SentenceTransformer(LOCAL_MODEL_PATH, device=_DEVICE)
+        logger.info("SBERT model loaded successfully (device=%s).", _DEVICE)
     return _model
-
-def ensure_nltk():
-    global _nltk_ready
-    if not _nltk_ready:
-        import nltk
-        for pkg in ["punkt", "punkt_tab", "stopwords"]:
-            try:
-                nltk.download(pkg, quiet=True)
-            except Exception:
-                pass
-        _nltk_ready = True
 
 app = Flask(__name__)
 CORS(app)
@@ -61,17 +74,21 @@ def normalize(text: str) -> str:
 
 
 def get_embeddings(sentences: list[str]) -> np.ndarray:
+    """Encode sentences with the local SBERT model (batch_size=16 saves RAM)."""
     model = get_model()
-    embeddings = model.encode(sentences, convert_to_numpy=True, show_progress_bar=False)
+    embeddings = model.encode(
+        sentences,
+        convert_to_numpy=True,
+        show_progress_bar=False,
+        batch_size=16,            # small batch = lower peak RAM on 8 GB systems
+    )
     return embeddings
 
 
 def cosine_similarity_matrix(emb_a: np.ndarray, emb_b: np.ndarray) -> np.ndarray:
-    """Compute cosine similarity between every pair of sentences."""
-    # Normalize
-    norm_a = emb_a / (np.linalg.norm(emb_a, axis=1, keepdims=True) + 1e-9)
-    norm_b = emb_b / (np.linalg.norm(emb_b, axis=1, keepdims=True) + 1e-9)
-    return norm_a @ norm_b.T  # [len_a, len_b]
+    """Compute cosine similarity between every pair of sentences via sklearn."""
+    from sklearn.metrics.pairwise import cosine_similarity
+    return cosine_similarity(emb_a, emb_b)  # shape [len_a, len_b]
 
 
 # ──────────────────────────────────────────────
@@ -248,6 +265,57 @@ def analyze():
     except Exception as exc:
         logger.exception("Analysis failed")
         return jsonify({"error": str(exc)}), 500
+
+
+@app.route("/api/upload", methods=["POST"])
+def upload_document():
+    """Extract text from an uploaded PDF or Word (.docx) file."""
+    if "file" not in request.files:
+        return jsonify({"error": "No file part in request."}), 400
+
+    file = request.files["file"]
+    if not file or file.filename == "":
+        return jsonify({"error": "No file selected."}), 400
+
+    filename = secure_filename(file.filename)
+    ext = os.path.splitext(filename)[1].lower()
+
+    try:
+        if ext == ".pdf":
+            text = _extract_pdf(file)
+        elif ext in (".docx", ".doc"):
+            text = _extract_docx(file)
+        else:
+            return jsonify({"error": f"Unsupported file type '{ext}'. Please upload a PDF or Word document."}), 415
+    except Exception as exc:
+        logger.exception("File extraction failed")
+        return jsonify({"error": f"Could not extract text: {str(exc)}"}), 500
+
+    if not text or len(text.strip()) < 10:
+        return jsonify({"error": "No readable text found in the document."}), 422
+
+    return jsonify({"text": text.strip(), "filename": filename, "chars": len(text.strip())})
+
+
+def _extract_pdf(file_obj) -> str:
+    """Extract text from a PDF using PyMuPDF (fitz)."""
+    import fitz  # PyMuPDF
+    data = file_obj.read()
+    doc = fitz.open(stream=data, filetype="pdf")
+    pages = []
+    for page in doc:
+        pages.append(page.get_text("text"))
+    doc.close()
+    return "\n".join(pages)
+
+
+def _extract_docx(file_obj) -> str:
+    """Extract text from a .docx Word document using python-docx."""
+    from docx import Document
+    data = file_obj.read()
+    doc = Document(io.BytesIO(data))
+    paragraphs = [p.text for p in doc.paragraphs if p.text.strip()]
+    return "\n".join(paragraphs)
 
 
 @app.route("/api/health")

@@ -28,9 +28,86 @@ let analysisResult = null;
 document.addEventListener("DOMContentLoaded", () => {
   setupTextareas();
   setupButtons();
+  setupUploadZones();
   checkServerHealth();
   injectSVGDefs();
 });
+
+// ── FILE UPLOAD ────────────────────────────────
+function setupUploadZones() {
+  ["A", "B"].forEach(side => {
+    const zone   = document.getElementById(`uploadZone${side}`);
+    const input  = document.getElementById(`file${side}`);
+    const target = zone.dataset.target; // "docA" or "docB"
+
+    // File-picker change
+    input.addEventListener("change", () => {
+      if (input.files[0]) handleFileUpload(input.files[0], target, side);
+    });
+
+    // Drag events
+    zone.addEventListener("dragover", e => {
+      e.preventDefault();
+      zone.classList.add("drag-over");
+    });
+    zone.addEventListener("dragleave", () => zone.classList.remove("drag-over"));
+    zone.addEventListener("drop", e => {
+      e.preventDefault();
+      zone.classList.remove("drag-over");
+      const file = e.dataTransfer.files[0];
+      if (file) handleFileUpload(file, target, side);
+    });
+  });
+}
+
+async function handleFileUpload(file, textareaId, side) {
+  const statusEl = document.getElementById(`uploadStatus${side}`);
+  const allowed  = [".pdf", ".docx", ".doc"];
+  const ext      = file.name.slice(file.name.lastIndexOf(".")).toLowerCase();
+
+  if (!allowed.includes(ext)) {
+    setUploadStatus(statusEl, `❌ Unsupported type: ${ext}. Use .pdf or .docx`, "error");
+    return;
+  }
+
+  setUploadStatus(statusEl, `⏳ Extracting text from "${file.name}"…`, "loading");
+
+  const form = new FormData();
+  form.append("file", file);
+
+  try {
+    const res  = await fetch("/api/upload", { method: "POST", body: form });
+    const data = await res.json();
+
+    if (!res.ok) {
+      setUploadStatus(statusEl, `❌ ${data.error || "Upload failed."}`, "error");
+      return;
+    }
+
+    const ta = document.getElementById(textareaId);
+    ta.value = data.text;
+    ta.dispatchEvent(new Event("input"));
+
+    // Brief flash animation
+    ta.style.transition = "background 0.4s";
+    ta.style.background = "rgba(124,110,245,0.07)";
+    setTimeout(() => { ta.style.background = ""; }, 700);
+
+    setUploadStatus(
+      statusEl,
+      `✅ "${data.filename}" loaded — ${data.chars.toLocaleString()} chars`,
+      "success"
+    );
+  } catch (err) {
+    setUploadStatus(statusEl, `❌ Network error: ${err.message}`, "error");
+  }
+}
+
+function setUploadStatus(el, msg, type) {
+  el.textContent = msg;
+  el.className   = `upload-status ${type}`;
+}
+
 
 function injectSVGDefs() {
   const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
