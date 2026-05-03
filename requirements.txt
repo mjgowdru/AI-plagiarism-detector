@@ -1,16 +1,16 @@
-# ╔══════════════════════════════════════════════════════════════════╗
-# ║  PlagiaGuard – Offline Requirements                             ║
-# ║  Install:  pip install -r requirements.txt                      ║
-# ║  Offline:  pip install --no-index --find-links=./packages \     ║
-# ║                -r requirements.txt                              ║
-# ╚══════════════════════════════════════════════════════════════════╝
+# ====================================================================
+#   PlagiaGuard - Offline Requirements                             
+#   Install:  pip install -r requirements.txt                      
+#   Offline:  pip install --no-index --find-links=./packages \     
+#                 -r requirements.txt                              
+# ====================================================================
 
-# ── Web framework ────────────────────────────────────────────────────
+# -- Web framework ---------------------------------------------------
 flask>=3.0.0
 flask-cors>=4.0.0
 werkzeug>=3.0.0
 
-# ── AI / Embeddings (CPU-only, no GPU required) ──────────────────────
+# -- AI / Embeddings (CPU-only, no GPU required) ---------------------
 # Use the CPU-only PyTorch wheel to save ~2 GB of disk space:
 #   pip install torch --index-url https://download.pytorch.org/whl/cpu
 torch>=2.2.2
@@ -19,11 +19,12 @@ transformers>=4.40.2
 tokenizers>=0.19.0
 huggingface-hub>=0.23.0
 
-# ── Numerical / similarity ───────────────────────────────────────────
+# -- Numerical / similarity ------------------------------------------
 numpy>=1.26.4
 scikit-learn>=1.4.2
 scipy>=1.13.0
 
-# ── Document parsing ─────────────────────────────────────────────────
+# -- Document parsing ------------------------------------------------
 PyMuPDF>=1.23.0
 python-docx>=1.1.0
+
